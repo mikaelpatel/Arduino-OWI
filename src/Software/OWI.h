@@ -28,7 +28,7 @@
  */
 namespace Software {
 template<BOARD::pin_t PIN>
-  class OWI : public ::OWI {
+class OWI : public ::OWI {
 public:
   /**
    * Construct one wire bus connected to the given template pin
