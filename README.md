@@ -10,5 +10,5 @@ The OWI library has been developed to support the implementation of
 
 ## Example Sketches
 
-* [DS18B20](./examples/DS1307)
+* [DS18B20](./examples/DS18B20)
 * [Scanner](./examples/Scanner)
