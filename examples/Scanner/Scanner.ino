@@ -1,7 +1,8 @@
-#include "GPIO.h"
 #include "OWI.h"
+#include "GPIO.h"
+#include "Software/OWI.h"
 
-OWI<BOARD::D7> owi;
+Software::OWI<BOARD::D7> owi;
 
 void setup()
 {
@@ -24,7 +25,7 @@ void loop()
     Serial.print(':');
     Serial.print(F("family="));
     Serial.print(rom[0], HEX);
-    Serial.print(F(", s/n="));
+    Serial.print(F(", sn="));
     for (i = 1; i < sizeof(rom) - 1; i++) {
       Serial.print(rom[i], HEX);
       if (i < sizeof(rom) - 2) Serial.print(' ');

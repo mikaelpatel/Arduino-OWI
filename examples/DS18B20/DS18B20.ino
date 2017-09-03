@@ -1,8 +1,10 @@
-#include "GPIO.h"
 #include "OWI.h"
+#include "GPIO.h"
+#include "Software/OWI.h"
 #include "DS18B20.h"
 
-DS18B20<BOARD::D7> sensor;
+Software::OWI<BOARD::D7> owi;
+DS18B20 sensor(owi);
 
 void setup()
 {
@@ -12,18 +14,18 @@ void setup()
 
 void loop()
 {
-  uint8_t rom[sensor.ROM_MAX] = { 0 };
-  int8_t last = sensor.FIRST;
+  uint8_t rom[owi.ROM_MAX] = { 0 };
+  int8_t last = owi.FIRST;
   int i = 0;
 
   // Broadcast a convert request to all thermometer sensors
-  sensor.convert_request();
+  sensor.convert_request(true);
 
   // Print list of sensors and temperature
   do {
-    last = sensor.search_rom(sensor.FAMILY_CODE, rom, last);
-    if (last == sensor.ERROR) break;
-    sensor.read_scratchpad();
+    last = owi.search_rom(sensor.FAMILY_CODE, rom, last);
+    if (last == owi.ERROR) break;
+    sensor.read_scratchpad(false);
     Serial.print(i++);
     Serial.print(F(":ROM:"));
     for (size_t i = 0; i < sizeof(rom); i++) {
@@ -33,7 +35,7 @@ void loop()
     Serial.print(F(": "));
     Serial.print(sensor.temperature());
     Serial.println(F(" C"));
-  } while (last != sensor.LAST);
+  } while (last != owi.LAST);
   Serial.println();
 
   delay(5000);

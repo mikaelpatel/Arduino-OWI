@@ -1,11 +1,10 @@
 /** @mainpage Arduino-OWI
 
 The OWI library has been developed to support the implementation of
-1-wire device drivers.
+1-wire device drivers. Includes GPIO based Software::OWI bus manager
+and device driver for DS18B20.
 
-Includes device driver for DS18B20.
-
-Version: 1.0
+Version: 1.1
 */
 
 /** @page License

@@ -19,30 +19,15 @@
 #ifndef OWI_H
 #define OWI_H
 
-#include "GPIO.h"
-
 #ifndef CHARBITS
 #define CHARBITS 8
 #endif
 
 /**
- * One Wire Interface (OWI) template class using GPIO.
- * @param[in] PIN board pin for 1-wire bus.
+ * One Wire Interface (OWI) abstract class.
  */
-template<BOARD::pin_t PIN>
 class OWI {
 public:
-  /**
-   * Standard ROM Commands.
-   */
-  enum {
-    SEARCH_ROM = 0xF0,		//!< Initiate device search.
-    READ_ROM = 0x33,		//!< Read device family code and serial number.
-    MATCH_ROM = 0x55,		//!< Select device with 64-bit rom code.
-    SKIP_ROM = 0xCC,		//!< Broadcast or single device.
-    ALARM_SEARCH = 0xEC		//!< Initiate device alarm search.
-  } __attribute__((packed));
-
   /** ROM size in bytes. */
   static const size_t ROM_MAX = 8;
 
@@ -50,71 +35,21 @@ public:
   static const size_t ROMBITS = ROM_MAX * CHARBITS;
 
   /**
-   * Construct one wire bus connected to the given template pin
-   * parameter.
-   */
-  OWI() :
-    m_crc(0)
-  {
-    m_pin.input();
-    m_pin.low();
-  }
-
-  /**
+   * @override{OWI}
    * Reset the one wire bus and check that at least one device is
    * presence.
    * @return true(1) if successful otherwise false(0).
    */
-  bool reset()
-  {
-    uint8_t retry = RESET_RETRY_MAX;
-    bool res;
-    do {
-      m_pin.output();
-      delayMicroseconds(490);
-      noInterrupts();
-      m_pin.input();
-      delayMicroseconds(70);
-      res = m_pin;
-      interrupts();
-      delayMicroseconds(410);
-    } while (retry-- && res);
-    return (res == 0);
-  }
+  virtual bool reset() = 0;
 
   /**
+   * @override{OWI}
    * Read the given number of bits from the one wire bus. Default
    * number of bits is 8. Calculate partial check-sum.
    * @param[in] bits to be read.
    * @return value read.
    */
-  uint8_t read(uint8_t bits = CHARBITS)
-  {
-    uint8_t adjust = CHARBITS - bits;
-    uint8_t res = 0;
-    uint8_t mix = 0;
-    while (bits--) {
-      noInterrupts();
-      m_pin.output();
-      delayMicroseconds(6);
-      m_pin.input();
-      delayMicroseconds(9);
-      res >>= 1;
-      if (m_pin) {
-	res |= 0x80;
-	mix = (m_crc ^ 1);
-      }
-      else {
-	mix = (m_crc ^ 0);
-      }
-      m_crc >>= 1;
-      if (mix & 1) m_crc ^= 0x8C;
-      interrupts();
-      delayMicroseconds(55);
-    }
-    res >>= adjust;
-    return (res);
-  }
+  virtual uint8_t read(uint8_t bits = CHARBITS) = 0;
 
   /**
    * Read given number of bytes from one wire bus (device) to given
@@ -132,30 +67,13 @@ public:
   }
 
   /**
+   * @override{OWI}
    * Write the given value to the one wire bus. The bits are written
    * from LSB to MSB.
    * @param[in] value to write.
    * @param[in] bits to be written.
    */
-  void write(uint8_t value, uint8_t bits = CHARBITS)
-  {
-    while (bits--) {
-      noInterrupts();
-      m_pin.output();
-      if (value & 0x01) {
-	delayMicroseconds(6);
-	m_pin.input();
-	delayMicroseconds(64);
-      }
-      else {
-	delayMicroseconds(60);
-	m_pin.input();
-	delayMicroseconds(10);
-      }
-      interrupts();
-      value >>= 1;
-    }
-  }
+  virtual void write(uint8_t value, uint8_t bits = CHARBITS) = 0;
 
   /**
    * Write the given value and given number of bytes from buffer to
@@ -247,12 +165,63 @@ public:
     return (search(code, last));
   }
 
+  /**
+   * Abstract One-Wire Interface Device Driver class.
+   */
+  class Device {
+  public:
+    /**
+     * Construct One-Wire Interface Device Driver with given bus and
+     * device address.
+     * @param[in] owi bus manager.
+     * @param[in] rom code (default NULL).
+     */
+    Device(OWI& owi, const uint8_t* rom = NULL) :
+      m_owi(owi)
+    {
+      if (rom != NULL) memcpy(m_rom, rom, ROM_MAX);
+    }
+
+    /**
+     * Set device rom code.
+     * @param[in] rom code.
+     */
+    void rom(const uint8_t* rom)
+    {
+      memcpy(m_rom, rom, ROM_MAX);
+    }
+
+    /**
+     * Get device rom code.
+     * @return rom code.
+     */
+    const uint8_t* rom()
+    {
+      return (m_rom);
+    }
+
+  protected:
+    /** One-Wire Interface Manager. */
+    OWI& m_owi;
+
+    /** Device address. */
+    uint8_t m_rom[ROM_MAX];
+  };
+
 protected:
+  /**
+   * Standard ROM Commands.
+   */
+  enum {
+    SEARCH_ROM = 0xF0,		//!< Initiate device search.
+    READ_ROM = 0x33,		//!< Read device family code and serial number.
+    MATCH_ROM = 0x55,		//!< Select device with 64-bit rom code.
+    SKIP_ROM = 0xCC,		//!< Broadcast or single device.
+    ALARM_SEARCH = 0xEC		//!< Initiate device alarm search.
+  } __attribute__((packed));
+
   /** Maximum number of reset retries. */
   static const uint8_t RESET_RETRY_MAX = 4;
-
-  /** 1-Wire bus pin. */
-  GPIO<PIN> m_pin;
 
   /** Intermediate CRC sum. */
   uint8_t m_crc;

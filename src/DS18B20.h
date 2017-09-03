@@ -39,17 +39,18 @@
  * @section References
  * 1. Maxim Integrated product description (REV: 042208)
  */
-template<BOARD::pin_t PIN>
-class DS18B20 : public OWI<PIN> {
+class DS18B20 : public OWI::Device {
 public:
   /** Device family code. */
   static const uint8_t FAMILY_CODE = 0x28;
 
   /**
    * Construct a DS18B20 device connected to the given 1-Wire bus.
+   * @param[in] owi bus manager.
+   * @param[in] rom code (default NULL).
    */
-  DS18B20() :
-    OWI<PIN>(),
+  DS18B20(OWI& owi, uint8_t* rom = NULL) :
+    OWI::Device(owi, rom),
     m_start(0L),
     m_converting(false)
   {}
@@ -113,20 +114,19 @@ public:
   }
 
   /**
-   * Initiate temperature conversion. Pass NULL for rom code to
-   * broadcast to all sensors.
-   * @param[in] code device identity (default NULL).
+   * Initiate temperature conversion.
+   * @param[in] broadcast flag.
    * @return true(1) if successful otherwise false(0).
    */
-  bool convert_request(uint8_t* code = NULL)
+  bool convert_request(bool broadcast = false)
   {
-    if (code != NULL) {
-      if (!match_rom(code)) return (false);
+    if (broadcast) {
+      if (!m_owi.skip_rom()) return (false);
     }
     else {
-      if (!skip_rom()) return (false);
+      if (!m_owi.match_rom(m_rom)) return (false);
     }
-    write(CONVERT_T, CHARBITS);
+    m_owi.write(CONVERT_T, CHARBITS);
     m_start = millis();
     m_converting = true;
     return (true);
@@ -135,12 +135,11 @@ public:
   /**
    * Read the contents of the scratchpad to local memory. An internal
    * delay will occur if a convert_request() is pending. The delay is
-   * at most max conversion time (750 ms). Pass NULL for rom code to
-   * current sensor in search.
-   * @param[in] code device identity (default NULL).
+   * at most max conversion time (750 ms).
+   * @param[in] match rom code.
    * @return true(1) if successful otherwise false(0).
    */
-  bool read_scratchpad(uint8_t* code = NULL)
+  bool read_scratchpad(bool match = true)
   {
     if (m_converting) {
       int32_t ms = millis() - m_start;
@@ -151,53 +150,45 @@ public:
       }
       m_converting = false;
     }
-    if (code && !match_rom(code)) return (false);
-    write(READ_SCRATCHPAD);
-    return (read(&m_scratchpad, sizeof(m_scratchpad)));
+    if (match && !m_owi.match_rom(m_rom)) return (false);
+    m_owi.write(READ_SCRATCHPAD);
+    return (m_owi.read(&m_scratchpad, sizeof(m_scratchpad)));
   }
 
   /**
    * Write the contents of the scratchpad triggers and configuration
    * (3 bytes) to device.
-   * @param[in] code device identity.
    * @return true(1) if successful otherwise false(0).
    */
-  bool write_scratchpad(uint8_t* code)
+  bool write_scratchpad()
   {
-    if (!match_rom(code)) return (false);
-    write(WRITE_SCRATCHPAD, &m_scratchpad.high_trigger, CONFIG_MAX);
+    if (!m_owi.match_rom(m_rom)) return (false);
+    m_owi.write(WRITE_SCRATCHPAD, &m_scratchpad.high_trigger, CONFIG_MAX);
     return (true);
   }
 
   /**
    * Copy device scratchpad triggers and configuration data to device
    * EEPROM.
-   * @param[in] code device identity.
    * @return true(1) if successful otherwise false(0).
    */
-  bool copy_scratchpad(uint8_t* code)
+  bool copy_scratchpad()
   {
-    if (!match_rom(code)) return (false);
-    write(COPY_SCRATCHPAD);
+    if (!m_owi.match_rom(m_rom)) return (false);
+    m_owi.write(COPY_SCRATCHPAD);
     return (true);
   }
 
   /**
    * Recall the alarm triggers and configuration from device EEPROM.
-   * @param[in] code device identity.
    * @return true(1) if successful otherwise false(0).
    */
-  bool recall(uint8_t* code)
+  bool recall()
   {
-    if (!match_rom(code)) return (false);
-    write(RECALL_E);
+    if (!m_owi.match_rom(m_rom)) return (false);
+    m_owi.write(RECALL_E);
     return (true);
   }
-
-  using OWI<PIN>::read;
-  using OWI<PIN>::write;
-  using OWI<PIN>::skip_rom;
-  using OWI<PIN>::match_rom;
 
 protected:
   /**

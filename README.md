@@ -4,7 +4,8 @@ The OWI library has been developed to support the implementation of
 
 ## Drivers
 
-* [DS18B20, Programmable Resolution 1-Wire Digital Thermometer](./src/DS18B20.h)
+* [Software One-Wire Interface, Software::OWI](./src/Software/OWI.h)
+* [Programmable Resolution 1-Wire Digital Thermometer, DS18B20](./src/DS18B20.h)
 
 ## Example Sketches
 
