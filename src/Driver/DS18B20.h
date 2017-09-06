@@ -1,5 +1,5 @@
 /**
- * @file DS18B20.h
+ * @file Driver/DS18B20.h
  * @version 1.0
  *
  * @section License

@@ -2,7 +2,13 @@
 #include "GPIO.h"
 #include "Software/OWI.h"
 
+#if defined(ARDUINO_attiny)
+#include "Software/Serial.h"
+Software::Serial<BOARD::D0> Serial;
+Software::OWI<BOARD::D1> owi;
+#else
 Software::OWI<BOARD::D7> owi;
+#endif
 
 void setup()
 {

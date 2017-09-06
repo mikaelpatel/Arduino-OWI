@@ -1,9 +1,16 @@
-#include "OWI.h"
 #include "GPIO.h"
+#include "OWI.h"
 #include "Software/OWI.h"
-#include "DS18B20.h"
+#include "Driver/DS18B20.h"
 
+#if defined(ARDUINO_attiny)
+#include "Software/Serial.h"
+Software::Serial<BOARD::D0> Serial;
+Software::OWI<BOARD::D1> owi;
+#else
 Software::OWI<BOARD::D7> owi;
+#endif
+
 DS18B20 sensor(owi);
 
 void setup()

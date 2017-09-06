@@ -9,11 +9,13 @@ const uint8_t KEY[] PROGMEM = {
   0x01, 0x26, 0xd9, 0x3e, 0x09, 0x00, 0x00, 0x47
 };
 
-// One-Wire bus manager
-Software::OWI<BOARD::D7> owi;
-
-// Use built-in LED to signal
+#if defined(ARDUINO_attiny)
+GPIO<BOARD::D0> led;
+Software::OWI<BOARD::D1> owi;
+#else
 GPIO<BOARD::D13> led;
+Software::OWI<BOARD::D7> owi;
+#endif
 
 void setup()
 {
