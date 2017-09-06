@@ -2,6 +2,8 @@
 The OWI library has been developed to support the implementation of
 1-wire device drivers.
 
+Version: 1.2
+
 ## Classes
 
 * [Abstract One-Wire Interface, OWI](./src/OWI.h)
