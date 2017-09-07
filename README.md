@@ -7,6 +7,7 @@ Version: 1.2
 ## Classes
 
 * [Abstract One-Wire Interface, OWI](./src/OWI.h)
+* [One-Wire Device Driver Interface, OWI::Device](./src/OWI.h)
 * [Software One-Wire Interface, Software::OWI](./src/Software/OWI.h)
 * [Programmable Resolution 1-Wire Digital Thermometer, DS18B20](./src/Driver/DS18B20.h)
 
