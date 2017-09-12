@@ -16,3 +16,7 @@ Version: 1.2
 * [DS18B20](./examples/DS18B20)
 * [DS1990A](./examples/DS1990A)
 * [Scanner](./examples/Scanner)
+
+## Dependencies
+
+* [General Purpose Input/Output library for Arduino, GPIO](https://github.com/mikaelpatel/Arduino-GPIO)
