@@ -1,6 +1,6 @@
 /**
  * @file Software/OWI.h
- * @version 1.0
+ * @version 1.1
  *
  * @section License
  * Copyright (C) 2017, Mikael Patel
