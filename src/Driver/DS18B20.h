@@ -213,7 +213,7 @@ protected:
     uint8_t configuration;	//!< Configuration; resolution, alarm.
     uint8_t reserved[3];	//!< Reserved.
     uint8_t crc;		//!< Check sum.
-  };
+  } __attribute__((packed));
   scratchpad_t m_scratchpad;
 
   /** Size of configuration; high/low trigger and configuration byte. */

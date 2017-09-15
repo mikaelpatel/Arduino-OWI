@@ -36,8 +36,7 @@ public:
    */
   OWI()
   {
-    m_pin.input();
-    m_pin.low();
+    m_pin.open_collector();
   }
 
   /**
