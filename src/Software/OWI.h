@@ -36,7 +36,7 @@ public:
    */
   OWI()
   {
-    m_pin.open_collector();
+    m_pin.open_drain();
   }
 
   /**

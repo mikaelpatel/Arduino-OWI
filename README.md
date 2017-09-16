@@ -3,7 +3,7 @@ The OWI library has been developed to support the implementation of
 1-wire device drivers. The library includes an example device driver
 and a bus scanner.
 
-Version: 1.3
+Version: 1.4
 
 ## Classes
 
