@@ -26,7 +26,7 @@ void loop()
   int i = 0;
 
   // Broadcast a convert request to all thermometer sensors
-  sensor.convert_request(true);
+  if (!sensor.convert_request(true)) return;
 
   // Print list of sensors and temperature
   do {
