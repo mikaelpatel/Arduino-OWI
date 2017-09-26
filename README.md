@@ -19,4 +19,4 @@ Version: 1.4
 
 ## Dependencies
 
-* [General Purpose Input/Output library for Arduino, GPIO](https://github.com/mikaelpatel/Arduino-GPIO)
+* [Arduino-GPIO](https://github.com/mikaelpatel/Arduino-GPIO)
