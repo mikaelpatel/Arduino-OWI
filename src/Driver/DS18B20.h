@@ -33,7 +33,6 @@
  * (Dn)----------+-----2-|DQ          | |
  * (VCC)---------------3-|VDD         |/
  *                       +------------+
- *
  * @endcode
  *
  * @section References
@@ -44,6 +43,9 @@ public:
   /** Device family code. */
   static const uint8_t FAMILY_CODE = 0x28;
 
+  /** Max conversion time for 12-bit conversion in milli-seconds. */
+  static const uint16_t MAX_CONVERSION_TIME = 750;
+
   /**
    * Construct a DS18B20 device connected to the given 1-Wire bus.
    * @param[in] owi bus manager.
@@ -51,7 +53,7 @@ public:
    */
   DS18B20(OWI& owi, uint8_t* rom = NULL) :
     OWI::Device(owi, rom),
-    m_start(0L),
+    m_start(0),
     m_converting(false)
   {}
 
@@ -81,9 +83,7 @@ public:
   /**
    * Get the latest temperature reading from the local memory scratchpad.
    * Call convert_request() and read_scratchpad() before accessing the
-   * scratchpad. Returns at highest resolution a fixed point<12,4>
-   * point number. For 11-bit resolution, bit 0 is undefined, 10-bits
-   * bit 1 and 0, and so on (LSB).
+   * scratchpad.
    * @return temperature
    */
   float temperature() const
@@ -114,8 +114,9 @@ public:
   }
 
   /**
-   * Initiate temperature conversion.
-   * @param[in] broadcast flag.
+   * Initiate temperature conversion. Call with broadcast parameter
+   * true(1) to issue skip_rom().
+   * @param[in] broadcast flag (default false).
    * @return true(1) if successful otherwise false(0).
    */
   bool convert_request(bool broadcast = false)
@@ -126,7 +127,7 @@ public:
     else {
       if (!m_owi.match_rom(m_rom)) return (false);
     }
-    m_owi.write(CONVERT_T, CHARBITS);
+    m_owi.write(CONVERT_T);
     m_start = millis();
     m_converting = true;
     return (true);
@@ -135,15 +136,18 @@ public:
   /**
    * Read the contents of the scratchpad to local memory. An internal
    * delay will occur if a convert_request() is pending. The delay is
-   * at most max conversion time (750 ms).
-   * @param[in] match rom code.
+   * at most max conversion time (750 ms). Call with match parameter
+   * false if used with search_rom().
+   * @param[in] match rom code (default true).
    * @return true(1) if successful otherwise false(0).
    */
   bool read_scratchpad(bool match = true)
   {
+    // Check if a conversion is in progress
     if (m_converting) {
-      int32_t ms = millis() - m_start;
+      uint16_t ms = millis() - m_start;
       uint16_t conv_time = (MAX_CONVERSION_TIME >> (12 - resolution()));
+      // May need to wait for the conversion to complete
       if (ms < conv_time) {
 	ms = conv_time - ms;
 	delay(ms);
@@ -220,12 +224,9 @@ protected:
   static const uint8_t CONFIG_MAX = 3;
 
   /** Watchdog millis on convert_request(). */
-  uint32_t m_start;
+  uint16_t m_start;
 
   /** Convert request pending. */
-  uint8_t m_converting;
-
-  /** Max conversion time for 12-bit conversion in milli-seconds. */
-  static const uint16_t MAX_CONVERSION_TIME = 750;
+  bool m_converting;
 };
 #endif

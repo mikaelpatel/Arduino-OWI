@@ -4,7 +4,7 @@ The OWI library has been developed to support the implementation of
 1-wire device drivers. Includes abstract OWI bus manager class, GPIO
 based Software::OWI bus manager and device driver for DS18B20.
 
-Version: 1.4
+Version: 1.5
 */
 
 /** @page License

@@ -1,6 +1,6 @@
 /**
  * @file OWI.h
- * @version 1.0
+ * @version 1.1
  *
  * @section License
  * Copyright (C) 2017, Mikael Patel
@@ -24,14 +24,14 @@
 #endif
 
 /**
- * One Wire Interface (OWI) abstract class.
+ * One Wire Interface (OWI) Bus Manager abstract class.
  */
 class OWI {
 public:
-  /** ROM size in bytes. */
+  /** One Wire device identity ROM size in bytes. */
   static const size_t ROM_MAX = 8;
 
-  /** ROM size in bits. */
+  /** One Wire device identity ROM size in bits. */
   static const size_t ROMBITS = ROM_MAX * CHARBITS;
 
   /**
@@ -45,18 +45,18 @@ public:
   /**
    * @override{OWI}
    * Read the given number of bits from the one wire bus. Default
-   * number of bits is 8. Calculate partial check-sum.
-   * @param[in] bits to be read.
+   * number of bits is CHARBITS (8). Calculates partial check-sum.
+   * @param[in] bits to be read (default CHARBITS).
    * @return value read.
    */
   virtual uint8_t read(uint8_t bits = CHARBITS) = 0;
 
   /**
    * Read given number of bytes from one wire bus (device) to given
-   * buffer. Return true(1) if correctly read otherwise false(0).
+   * buffer.
    * @param[in] buf buffer pointer.
    * @param[in] count number of bytes to read.
-   * @return bool.
+   * @return true(1) if correctly read otherwise false(0).
    */
   bool read(void* buf, size_t count)
   {
@@ -71,7 +71,7 @@ public:
    * Write the given value to the one wire bus. The bits are written
    * from LSB to MSB.
    * @param[in] value to write.
-   * @param[in] bits to be written.
+   * @param[in] bits to be written (default CHARBITS).
    */
   virtual void write(uint8_t value, uint8_t bits = CHARBITS) = 0;
 
@@ -89,7 +89,7 @@ public:
     while (count--) write(*bp++);
   }
 
-  /** Search position. */
+  /** Search position and return values. */
   enum {
     FIRST = -1,			//!< Start position of search.
     ERROR = -1,			//!< Error during search.
@@ -98,6 +98,7 @@ public:
 
   /**
    * Search device rom given the last position of discrepancy.
+   * Return position of difference or negative error code.
    * @param[in] family code.
    * @param[in] code device identity.
    * @param[in] last position of discrepancy (default FIRST).
@@ -166,13 +167,13 @@ public:
   }
 
   /**
-   * Abstract One-Wire Interface Device Driver class.
+   * One-Wire Interface (OWI) Device Driver abstract class.
    */
   class Device {
   public:
     /**
-     * Construct One-Wire Interface Device Driver with given bus and
-     * device address.
+     * Construct One-Wire Interface (OWI) Device Driver with given bus
+     * and device address.
      * @param[in] owi bus manager.
      * @param[in] rom code (default NULL).
      */
@@ -192,19 +193,28 @@ public:
     }
 
     /**
+     * Set device rom code.
+     * @param[in] rom code in program memory.
+     */
+    void rom_P(const uint8_t* rom)
+    {
+      memcpy_P(m_rom, rom, ROM_MAX);
+    }
+
+    /**
      * Get device rom code.
      * @return rom code.
      */
-    const uint8_t* rom()
+    uint8_t* rom()
     {
       return (m_rom);
     }
 
   protected:
-    /** One-Wire Interface Manager. */
+    /** One-Wire Bus Manager. */
     OWI& m_owi;
 
-    /** Device address. */
+    /** Device rom idenity code. */
     uint8_t m_rom[ROM_MAX];
   };
 
@@ -227,9 +237,10 @@ protected:
   uint8_t m_crc;
 
   /**
-   * Search device rom given the last position of discrepancy.
-   * @param[in] code device identity.
-   * @param[in] last position of discrepancy.
+   * Search device rom given the last position of discrepancy and
+   * partial or full rom code.
+   * @param[in] code device identity rom.
+   * @param[in] last position of discrepancy (default FIRST).
    * @return position of difference or negative error code.
    */
   int8_t search(uint8_t* code, int8_t last = FIRST)
