@@ -1,6 +1,6 @@
 /**
  * @file OWI.h
- * @version 1.1
+ * @version 1.2
  *
  * @section License
  * Copyright (C) 2017, Mikael Patel
@@ -87,6 +87,34 @@ public:
     write(value);
     const uint8_t* bp = (const uint8_t*) buf;
     while (count--) write(*bp++);
+  }
+
+  /**
+   * @override{OWI}
+   * Search (rom and alarm) support function. Reads 2-bits and writes
+   * given direction 1-bit value when discrepancy 0b00 read. Writes
+   * one(1) when 0b01 read, zero(0) on 0b10. Reading 0b11 is an error
+   * state.
+   * @param[in,out] dir bit to write when discrepancy read.
+   * @return 2-bits read and bit written.
+   */
+  virtual int8_t triplet(uint8_t& dir)
+  {
+    switch (read(2)) {
+    case 0b00:
+      write(dir, 1);
+      return (0b00);
+    case 0b01:
+      write(1, 1);
+      dir = 1;
+      return (0b01);
+    case 0b10:
+      write(0, 1);
+      dir = 0;
+      return (0b10);
+    default:
+      return (0b11);
+    }
   }
 
   /** Search position and return values. */
@@ -218,7 +246,6 @@ public:
     uint8_t m_rom[ROM_MAX];
   };
 
-protected:
   /**
    * Standard ROM Commands.
    */
@@ -230,6 +257,7 @@ protected:
     ALARM_SEARCH = 0xEC		//!< Initiate device alarm search.
   } __attribute__((packed));
 
+protected:
   /** Maximum number of reset retries. */
   static const uint8_t RESET_RETRY_MAX = 4;
 
@@ -250,37 +278,17 @@ protected:
     for (uint8_t i = 0; i < 8; i++) {
       uint8_t data = 0;
       for (uint8_t j = 0; j < 8; j++) {
-	data >>= 1;
-	switch (read(2)) {
-	case 0b00: // Discrepency between device roms
-	  if (pos == last) {
-	    write(1, 1);
-	    data |= 0x80;
-	    last = FIRST;
-	  }
-	  else if (pos > last) {
-	    write(0, 1);
-	    next = pos;
-	  }
-	  else if (code[i] & (1 << j)) {
-	    write(1, 1);
-	    data |= 0x80;
-	  }
-	  else {
-	    write(0, 1);
-	    next = pos;
-	  }
+	uint8_t dir = (pos == last) || ((pos < last) && (code[i] & (1 << j)));
+	switch (triplet(dir)) {
+	case 0b00:
+	  if (pos == last) last = FIRST;
+	  else if (pos > last || (code[i] & (1 << j)) == 0) next = pos;
 	  break;
-	case 0b01: // Only one's at this position
-	  write(1, 1);
-	  data |= 0x80;
-	  break;
-	case 0b10: // Only zero's at this position
-	  write(0, 1);
-	  break;
-	case 0b11: // No device detected
+	case 0b11:
 	  return (ERROR);
 	}
+	data >>= 1;
+	if (dir) data |= 0x80;
 	pos += 1;
       }
       code[i] = data;

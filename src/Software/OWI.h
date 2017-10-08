@@ -23,7 +23,7 @@
 #include "GPIO.h"
 
 /**
- * One Wire Interface (OWI) template class using GPIO.
+ * One Wire Interface (OWI) Bus Manager template class using GPIO.
  * @param[in] PIN board pin for 1-wire bus.
  */
 namespace Software {

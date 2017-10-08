@@ -1,6 +1,6 @@
 /**
  * @file Driver/DS18B20.h
- * @version 1.0
+ * @version 1.1
  *
  * @section License
  * Copyright (C) 2017, Mikael Patel
@@ -48,6 +48,8 @@ public:
 
   /**
    * Construct a DS18B20 device connected to the given 1-Wire bus.
+   * Initiate with default resolution (12-bits) and triggers (70, 75),
+   * as hardware reset for device.
    * @param[in] owi bus manager.
    * @param[in] rom code (default NULL).
    */
@@ -55,7 +57,10 @@ public:
     OWI::Device(owi, rom),
     m_start(0),
     m_converting(false)
-  {}
+  {
+    resolution(12);
+    set_trigger(70, 75);
+  }
 
   /**
    * Set conversion resolution from 9..12 bits. Use write_scratchpad()
@@ -81,9 +86,9 @@ public:
   }
 
   /**
-   * Get the latest temperature reading from the local memory scratchpad.
-   * Call convert_request() and read_scratchpad() before accessing the
-   * scratchpad.
+   * Get the latest temperature reading from the scratchpad copy.
+   * Call convert_request(), convert_await() and read_scratchpad()
+   * before accessing the scratchpad.
    * @return temperature
    */
   float temperature() const
@@ -92,8 +97,7 @@ public:
   }
 
   /**
-   * Get conversion resolution. Use connect(), or read_scratchpad() to
-   * read values from device before calling this method.
+   * Get conversion resolution.
    * @return number of bits.
    */
   uint8_t resolution() const
@@ -103,7 +107,6 @@ public:
 
   /**
    * Get alarm trigger values; low and high threshold values.
-   * Use connect(), or read_scratchpad() to read values from device.
    * @param[out] low threshold.
    * @param[out] high threshold.
    */
@@ -115,7 +118,7 @@ public:
 
   /**
    * Initiate temperature conversion. Call with broadcast parameter
-   * true(1) to issue skip_rom().
+   * true(1) to issue skip_rom() and issue to command to all devices.
    * @param[in] broadcast flag (default false).
    * @return true(1) if successful otherwise false(0).
    */
@@ -134,6 +137,30 @@ public:
   }
 
   /**
+   * Return remaining convertion time in milliseconds.
+   * @return milliseconds remaining.
+   */
+  uint16_t conversion_time()
+  {
+    if (!m_converting) return (0);
+    uint16_t ms = millis() - m_start;
+    uint16_t conv_ms = (MAX_CONVERSION_TIME >> (12 - resolution()));
+    if (conv_ms > ms) return (conv_ms - ms);
+    return (0);
+  }
+
+  /**
+   * Delay until the temperature conversion is completed.
+   * @return true(1) if successful otherwise false(0).
+   */
+  bool convert_await()
+  {
+    if (!m_converting) return (false);
+    delay(conversion_time());
+    return (true);
+  }
+
+  /**
    * Read the contents of the scratchpad to local memory. An internal
    * delay will occur if a convert_request() is pending. The delay is
    * at most max conversion time (750 ms). Call with match parameter
@@ -143,17 +170,7 @@ public:
    */
   bool read_scratchpad(bool match = true)
   {
-    // Check if a conversion is in progress
-    if (m_converting) {
-      uint16_t ms = millis() - m_start;
-      uint16_t conv_time = (MAX_CONVERSION_TIME >> (12 - resolution()));
-      // May need to wait for the conversion to complete
-      if (ms < conv_time) {
-	ms = conv_time - ms;
-	delay(ms);
-      }
-      m_converting = false;
-    }
+    convert_await();
     if (match && !m_owi.match_rom(m_rom)) return (false);
     m_owi.write(READ_SCRATCHPAD);
     return (m_owi.read(&m_scratchpad, sizeof(m_scratchpad)));

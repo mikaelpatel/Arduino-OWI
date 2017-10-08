@@ -1,13 +1,24 @@
 #include "OWI.h"
 #include "GPIO.h"
-#include "Software/OWI.h"
 
-#if defined(ARDUINO_attiny)
-#include "Software/Serial.h"
-Software::Serial<BOARD::D0> Serial;
-Software::OWI<BOARD::D1> owi;
-#else
+// Configure: Software/Hardware OWI Bus Manager
+#define USE_SOFTWARE_OWI
+#if defined(USE_SOFTWARE_OWI)
+#include "Software/OWI.h"
 Software::OWI<BOARD::D7> owi;
+
+#else
+#include "Hardware/OWI.h"
+// Configure: Software/Hardware TWI Bus Manager
+// #define USE_SOFTWARE_TWI
+#if defined(USE_SOFTWARE_TWI)
+#include "Software/TWI.h"
+Software::TWI<BOARD::D18,BOARD::D19> twi;
+#else
+#include "Hardware/TWI.h"
+Hardware::TWI twi;
+#endif
+Hardware::OWI owi(twi);
 #endif
 
 void setup()
@@ -23,7 +34,6 @@ void loop()
   uint8_t rom[owi.ROM_MAX] = { 0 };
   int8_t last = owi.FIRST;
   int id = 0;
-  size_t i;
 
   do {
     last = owi.search_rom(0, rom, last);

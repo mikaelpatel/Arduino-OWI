@@ -1,14 +1,25 @@
 #include "GPIO.h"
 #include "OWI.h"
-#include "Software/OWI.h"
 #include "Driver/DS18B20.h"
 
-#if defined(ARDUINO_attiny)
-#include "Software/Serial.h"
-Software::Serial<BOARD::D0> Serial;
-Software::OWI<BOARD::D1> owi;
-#else
+// Configure: Software/Hardware OWI Bus Manager
+#define USE_SOFTWARE_OWI
+#if defined(USE_SOFTWARE_OWI)
+#include "Software/OWI.h"
 Software::OWI<BOARD::D7> owi;
+
+#else
+#include "Hardware/OWI.h"
+// Configure: Software/Hardware TWI Bus Manager
+// #define USE_SOFTWARE_TWI
+#if defined(USE_SOFTWARE_TWI)
+#include "Software/TWI.h"
+Software::TWI<BOARD::D18,BOARD::D19> twi;
+#else
+#include "Hardware/TWI.h"
+Hardware::TWI twi;
+#endif
+Hardware::OWI owi(twi);
 #endif
 
 DS18B20 sensor(owi);
@@ -50,7 +61,7 @@ void loop()
   bool triggered = false;
   static uint32_t timestamp = 0;
   if (!sensor.convert_request(true)) return;
-  delay(1000);
+  delay(sensor.conversion_time());
   do {
     last = owi.alarm_search(rom, last);
     if (last == owi.ERROR) break;
