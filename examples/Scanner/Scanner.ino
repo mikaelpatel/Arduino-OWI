@@ -41,14 +41,13 @@ void loop()
 
     // Print sequence number
     Serial.print(id++);
-    Serial.print(F(": "));
 
     // Print family code
-    Serial.print(F("family="));
+    Serial.print(F(":family="));
     Serial.print(rom[0], HEX);
 
     // Print serial number
-    Serial.print(F(", sn="));
+    Serial.print(F(",sn="));
     size_t i = 1;
     do {
       if (rom[i] < 0x10) Serial.print(0);
@@ -57,10 +56,9 @@ void loop()
     } while (i < owi.ROM_MAX - 1);
 
     // Print cyclic redundancy check sum
-    Serial.print(F(", crc="));
+    Serial.print(F(",crc="));
     if (rom[i] < 0x10) Serial.print(0);
     Serial.println(rom[i], HEX);
-
   } while (last != owi.LAST);
 
   Serial.println();

@@ -33,21 +33,13 @@ void setup()
   // Iterate though all thermometers and configure.
   uint8_t* rom = sensor.rom();
   int8_t last = owi.FIRST;
-  Serial.println(F("Sensors:"));
   do {
     last = owi.search_rom(sensor.FAMILY_CODE, rom, last);
     if (last == owi.ERROR) break;
     sensor.resolution(10);
     sensor.set_trigger(20, 25);
     sensor.write_scratchpad();
-    for (size_t i = 1; i < owi.ROM_MAX - 1; i++) {
-      if (rom[i] < 0x10) Serial.print(0);
-      Serial.print(rom[i], HEX);
-    }
-    Serial.println();
   } while (last != owi.LAST);
-  Serial.println();
-  Serial.println(F("Alarms:"));
 }
 
 void loop()
@@ -59,7 +51,8 @@ void loop()
   int8_t last = owi.FIRST;
   uint8_t* rom = sensor.rom();
   bool triggered = false;
-  static uint32_t timestamp = 0;
+  static uint16_t timestamp = 0;
+  uint8_t id = 0;
   if (!sensor.convert_request(true)) return;
   delay(sensor.conversion_time());
   do {
@@ -68,15 +61,16 @@ void loop()
     triggered = true;
     sensor.read_scratchpad(false);
     Serial.print(timestamp);
-    Serial.print(F(", "));
-    for (size_t i = 1; i < owi.ROM_MAX - 1; i++) {
+    Serial.print('.');
+    Serial.print(id++);
+    Serial.print(F(":rom="));
+    for (size_t i = 1; i < owi.ROM_MAX; i++) {
       if (rom[i] < 0x10) Serial.print(0);
       Serial.print(rom[i], HEX);
     }
-    Serial.print(F(", "));
+    Serial.print(F(",temperature="));
     Serial.println(sensor.temperature());
   } while (last != owi.LAST);
-  if (triggered) Serial.println();
   timestamp += 1;
   delay(1000);
 }
