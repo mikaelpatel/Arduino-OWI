@@ -9,12 +9,17 @@
 Software::OWI<BOARD::D7> owi;
 
 #else
-#include "Hardware/OWI.h"
 // Configure: Software/Hardware TWI Bus Manager
 // #define USE_SOFTWARE_TWI
+#include "TWI.h"
+#include "Hardware/OWI.h"
 #if defined(USE_SOFTWARE_TWI)
 #include "Software/TWI.h"
+#if defined(SAM)
+Software::TWI<BOARD::D8,BOARD::D9> twi;
+#else
 Software::TWI<BOARD::D18,BOARD::D19> twi;
+#endif
 #else
 #include "Hardware/TWI.h"
 Hardware::TWI twi;
@@ -23,6 +28,16 @@ Hardware::OWI owi(twi);
 #endif
 
 DS18B20 sensor(owi);
+
+#define ASSERT(expr)							\
+  do {									\
+    if (!(expr)) {							\
+      Serial.print(__LINE__);						\
+      Serial.println(F(":assert:" #expr));				\
+      Serial.flush();							\
+      exit(0);								\
+    }									\
+  } while (0)
 
 void setup()
 {
@@ -47,7 +62,7 @@ void loop()
     if (last == owi.ERROR) break;
 
     // Read the scratchpad with current temperature, tiggers, etc
-    sensor.read_scratchpad(false);
+    ASSERT(sensor.read_scratchpad(false));
     int8_t low, high;
     sensor.get_trigger(low, high);
 

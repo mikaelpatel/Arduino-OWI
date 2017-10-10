@@ -8,12 +8,17 @@
 Software::OWI<BOARD::D7> owi;
 
 #else
-#include "Hardware/OWI.h"
 // Configure: Software/Hardware TWI Bus Manager
 // #define USE_SOFTWARE_TWI
+#include "TWI.h"
+#include "Hardware/OWI.h"
 #if defined(USE_SOFTWARE_TWI)
 #include "Software/TWI.h"
+#if defined(SAM)
+Software::TWI<BOARD::D8,BOARD::D9> twi;
+#else
 Software::TWI<BOARD::D18,BOARD::D19> twi;
+#endif
 #else
 #include "Hardware/TWI.h"
 Hardware::TWI twi;

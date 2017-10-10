@@ -61,9 +61,13 @@ public:
   bool read(void* buf, size_t count)
   {
     uint8_t* bp = (uint8_t*) buf;
-    m_crc = 0;
-    while (count--) *bp++ = read();
-    return (m_crc == 0);
+    uint8_t crc = 0;
+    while (count--) {
+      uint8_t value = read();
+      *bp++ = value;
+      crc = crc_update(crc, value);
+    }
+    return (crc == 0);
   }
 
   /**
@@ -257,12 +261,26 @@ public:
     ALARM_SEARCH = 0xEC		//!< Initiate device alarm search.
   } __attribute__((packed));
 
+  /**
+   * Optimized Dallas (now Maxim) iButton 8-bit CRC calculation.
+   * Polynomial: x^8 + x^5 + x^4 + 1 (0x8C) Initial value: 0x0
+   * See http://www.maxim-ic.com/appnotes.cfm/appnote_number/27
+   */
+  static uint8_t crc_update(uint8_t crc, uint8_t data)
+  {
+    crc = crc ^ data;
+    for (uint8_t i = 0; i < 8; i++) {
+      if (crc & 0x01)
+	crc = (crc >> 1) ^ 0x8C;
+      else
+	crc >>= 1;
+    }
+    return (crc);
+  }
+
 protected:
   /** Maximum number of reset retries. */
   static const uint8_t RESET_RETRY_MAX = 4;
-
-  /** Intermediate CRC sum. */
-  uint8_t m_crc;
 
   /**
    * Search device rom given the last position of discrepancy and

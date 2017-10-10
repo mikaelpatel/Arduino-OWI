@@ -73,7 +73,6 @@ public:
   {
     uint8_t adjust = CHARBITS - bits;
     uint8_t res = 0;
-    uint8_t mix = 0;
     while (bits--) {
       noInterrupts();
       m_pin.output();
@@ -81,15 +80,7 @@ public:
       m_pin.input();
       delayMicroseconds(9);
       res >>= 1;
-      if (m_pin) {
-	res |= 0x80;
-	mix = (m_crc ^ 1);
-      }
-      else {
-	mix = (m_crc ^ 0);
-      }
-      m_crc >>= 1;
-      if (mix & 1) m_crc ^= 0x8C;
+      res |= (m_pin ? 0x80 : 0x00);
       interrupts();
       delayMicroseconds(55);
     }

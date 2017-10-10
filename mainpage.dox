@@ -5,7 +5,7 @@ The OWI library has been developed to support the implementation of
 based Software::OWI bus manager, DS2482 based Hardware::OWI bus
 manager, and device driver for DS18B20.
 
-Version: 1.6
+Version: 1.7
 */
 
 /** @page License
