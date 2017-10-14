@@ -1,8 +1,8 @@
 #include "GPIO.h"
-#include "OWI.h"
-#include "Hardware/OWI.h"
 #include "TWI.h"
 #include "Hardware/TWI.h"
+#include "OWI.h"
+#include "Hardware/OWI.h"
 #include "benchmark.h"
 
 Hardware::TWI twi;
