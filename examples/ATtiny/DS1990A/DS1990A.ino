@@ -2,8 +2,8 @@
 #include "OWI.h"
 #include "Software/OWI.h"
 
-GPIO<BOARD::D13> led;
-Software::OWI<BOARD::D7> owi;
+GPIO<BOARD::D0> led;
+Software::OWI<BOARD::D1> owi;
 
 // Table with valid keys (64 bit 1-Wire rom code, 8 bytes per entry)
 const uint8_t KEY[] PROGMEM = {

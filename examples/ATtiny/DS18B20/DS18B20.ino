@@ -2,9 +2,11 @@
 #include "OWI.h"
 #include "Software/OWI.h"
 #include "Driver/DS18B20.h"
+#include "Software/Serial.h"
 #include "assert.h"
 
-Software::OWI<BOARD::D7> owi;
+Software::Serial<BOARD::D0> Serial;
+Software::OWI<BOARD::D1> owi;
 DS18B20 sensor(owi);
 
 void setup()

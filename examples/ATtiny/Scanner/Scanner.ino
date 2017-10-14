@@ -1,8 +1,11 @@
 #include "GPIO.h"
 #include "OWI.h"
 #include "Software/OWI.h"
+#include "Software/Serial.h"
+#include "assert.h"
 
-Software::OWI<BOARD::D7> owi;
+Software::Serial<BOARD::D0> Serial;
+Software::OWI<BOARD::D1> owi;
 
 void setup()
 {

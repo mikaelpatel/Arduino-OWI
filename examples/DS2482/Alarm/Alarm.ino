@@ -1,10 +1,13 @@
 #include "GPIO.h"
 #include "OWI.h"
-#include "Software/OWI.h"
+#include "TWI.h"
+#include "Hardware/TWI.h"
+#include "Hardware/OWI.h"
 #include "Driver/DS18B20.h"
 #include "assert.h"
 
-Software::OWI<BOARD::D7> owi;
+Hardware::TWI twi;
+Hardware::OWI owi(twi);
 DS18B20 sensor(owi);
 
 void setup()

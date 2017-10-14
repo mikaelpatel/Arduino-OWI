@@ -1,9 +1,12 @@
 #include "GPIO.h"
 #include "OWI.h"
-#include "Software/OWI.h"
+#include "Hardware/OWI.h"
+#include "TWI.h"
+#include "Hardware/TWI.h"
 #include "benchmark.h"
 
-Software::OWI<BOARD::D7> owi;
+Hardware::TWI twi;
+Hardware::OWI owi(twi);
 
 void setup()
 {
