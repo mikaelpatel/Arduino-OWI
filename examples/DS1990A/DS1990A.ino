@@ -1,5 +1,5 @@
-#include "OWI.h"
 #include "GPIO.h"
+#include "OWI.h"
 #include "Software/OWI.h"
 
 #if defined(ARDUINO_attiny)

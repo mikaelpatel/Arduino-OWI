@@ -45,7 +45,7 @@ public:
   /**
    * @override{OWI}
    * Read the given number of bits from the one wire bus. Default
-   * number of bits is CHARBITS (8). Calculates partial check-sum.
+   * number of bits is CHARBITS (8).
    * @param[in] bits to be read (default CHARBITS).
    * @return value read.
    */
@@ -53,10 +53,11 @@ public:
 
   /**
    * Read given number of bytes from one wire bus (device) to given
-   * buffer.
+   * buffer. Calculates 8-bit Cyclic Redundancy Check sum and return
+   * result of check.
    * @param[in] buf buffer pointer.
    * @param[in] count number of bytes to read.
-   * @return true(1) if correctly read otherwise false(0).
+   * @return true(1) if check sum is correct otherwise false(0).
    */
   bool read(void* buf, size_t count)
   {
@@ -80,15 +81,15 @@ public:
   virtual void write(uint8_t value, uint8_t bits = CHARBITS) = 0;
 
   /**
-   * Write the given value and given number of bytes from buffer to
+   * Write the given command and given number of bytes from buffer to
    * the one wire bus (device).
-   * @param[in] value to write.
+   * @param[in] cmd command to write.
    * @param[in] buf buffer pointer.
    * @param[in] count number of bytes to write.
    */
-  void write(uint8_t value, const void* buf, size_t count)
+  void write(uint8_t cmd, const void* buf, size_t count)
   {
-    write(value);
+    write(cmd);
     const uint8_t* bp = (const uint8_t*) buf;
     while (count--) write(*bp++);
   }
@@ -119,6 +120,34 @@ public:
     default:
       return (0b11);
     }
+  }
+
+  /**
+   * Standard 1-Wire ROM Commands.
+   */
+  enum {
+    SEARCH_ROM = 0xF0,		//!< Initiate device search.
+    READ_ROM = 0x33,		//!< Read device family code and serial number.
+    MATCH_ROM = 0x55,		//!< Select device with 64-bit rom code.
+    SKIP_ROM = 0xCC,		//!< Broadcast or single device.
+    ALARM_SEARCH = 0xEC		//!< Initiate device alarm search.
+  } __attribute__((packed));
+
+  /**
+   * Optimized Dallas/Maxim iButton 8-bit Cyclic Redundancy Check
+   * calculation. Polynomial: x^8 + x^5 + x^4 + 1 (0x8C).
+   * See http://www.maxim-ic.com/appnotes.cfm/appnote_number/27
+   */
+  static uint8_t crc_update(uint8_t crc, uint8_t data)
+  {
+    crc = crc ^ data;
+    for (uint8_t i = 0; i < 8; i++) {
+      if (crc & 0x01)
+	crc = (crc >> 1) ^ 0x8C;
+      else
+	crc >>= 1;
+    }
+    return (crc);
   }
 
   /** Search position and return values. */
@@ -250,34 +279,6 @@ public:
     uint8_t m_rom[ROM_MAX];
   };
 
-  /**
-   * Standard ROM Commands.
-   */
-  enum {
-    SEARCH_ROM = 0xF0,		//!< Initiate device search.
-    READ_ROM = 0x33,		//!< Read device family code and serial number.
-    MATCH_ROM = 0x55,		//!< Select device with 64-bit rom code.
-    SKIP_ROM = 0xCC,		//!< Broadcast or single device.
-    ALARM_SEARCH = 0xEC		//!< Initiate device alarm search.
-  } __attribute__((packed));
-
-  /**
-   * Optimized Dallas (now Maxim) iButton 8-bit CRC calculation.
-   * Polynomial: x^8 + x^5 + x^4 + 1 (0x8C) Initial value: 0x0
-   * See http://www.maxim-ic.com/appnotes.cfm/appnote_number/27
-   */
-  static uint8_t crc_update(uint8_t crc, uint8_t data)
-  {
-    crc = crc ^ data;
-    for (uint8_t i = 0; i < 8; i++) {
-      if (crc & 0x01)
-	crc = (crc >> 1) ^ 0x8C;
-      else
-	crc >>= 1;
-    }
-    return (crc);
-  }
-
 protected:
   /** Maximum number of reset retries. */
   static const uint8_t RESET_RETRY_MAX = 4;
@@ -299,8 +300,10 @@ protected:
 	uint8_t dir = (pos == last) || ((pos < last) && (code[i] & (1 << j)));
 	switch (triplet(dir)) {
 	case 0b00:
-	  if (pos == last) last = FIRST;
-	  else if (pos > last || (code[i] & (1 << j)) == 0) next = pos;
+	  if (pos == last)
+	    last = FIRST;
+	  else if (pos > last || (code[i] & (1 << j)) == 0)
+	    next = pos;
 	  break;
 	case 0b11:
 	  return (ERROR);

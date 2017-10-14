@@ -1,6 +1,7 @@
 #include "GPIO.h"
 #include "OWI.h"
 #include "Driver/DS18B20.h"
+#include "assert.h"
 
 // Configure: Software/Hardware OWI Bus Manager
 #define USE_SOFTWARE_OWI
@@ -28,16 +29,6 @@ Hardware::OWI owi(twi);
 #endif
 
 DS18B20 sensor(owi);
-
-#define ASSERT(expr)							\
-  do {									\
-    if (!(expr)) {							\
-      Serial.print(__LINE__);						\
-      Serial.println(F(":assert:" #expr));				\
-      Serial.flush();							\
-      exit(0);								\
-    }									\
-  } while (0)
 
 void setup()
 {

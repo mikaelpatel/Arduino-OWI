@@ -65,7 +65,7 @@ public:
   /**
    * @override{OWI}
    * Read the given number of bits from the one wire bus. Default
-   * number of bits is 8. Calculate partial check-sum.
+   * number of bits is 8.
    * @param[in] bits to be read.
    * @return value read.
    */

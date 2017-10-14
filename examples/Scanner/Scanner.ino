@@ -1,5 +1,5 @@
-#include "OWI.h"
 #include "GPIO.h"
+#include "OWI.h"
 
 // Configure: Software/Hardware OWI Bus Manager
 #define USE_SOFTWARE_OWI

@@ -69,7 +69,7 @@ public:
       while (bits--) {
 	res >>= 1;
 	m_bridge.one_wire_read_bit(value);
-	if (value) res |= 0x80;
+	res |= (value ? 0x80 : 0x00);
       }
       res >>= adjust;
     }
