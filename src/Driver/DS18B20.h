@@ -181,9 +181,9 @@ public:
    * (3 bytes) to device.
    * @return true(1) if successful otherwise false(0).
    */
-  bool write_scratchpad()
+  bool write_scratchpad(bool match = true)
   {
-    if (!m_owi.match_rom(m_rom)) return (false);
+    if (match && !m_owi.match_rom(m_rom)) return (false);
     m_owi.write(WRITE_SCRATCHPAD, &m_scratchpad.high_trigger, CONFIG_MAX);
     return (true);
   }

@@ -138,7 +138,8 @@ public:
    * calculation. Polynomial: x^8 + x^5 + x^4 + 1 (0x8C).
    * See http://www.maxim-ic.com/appnotes.cfm/appnote_number/27
    */
-  static uint8_t crc_update(uint8_t crc, uint8_t data)
+  static inline uint8_t crc_update(uint8_t crc, uint8_t data)
+    __attribute__((always_inline))
   {
     crc = crc ^ data;
     for (uint8_t i = 0; i < 8; i++) {

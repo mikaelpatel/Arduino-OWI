@@ -115,6 +115,9 @@ public:
     }
   }
 
+  using ::OWI::read;
+  using ::OWI::write;
+
 protected:
   /** 1-Wire bus pin. */
   GPIO<PIN> m_pin;

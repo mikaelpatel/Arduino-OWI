@@ -21,7 +21,7 @@ void setup()
     if (last == owi.ERROR) break;
     sensor.resolution(10);
     sensor.set_trigger(20, 25);
-    ASSERT(sensor.write_scratchpad());
+    ASSERT(sensor.write_scratchpad(false));
   } while (last != owi.LAST);
 }
 
@@ -45,7 +45,7 @@ void loop()
     Serial.print('.');
     Serial.print(id++);
     Serial.print(F(":rom="));
-    for (size_t i = 1; i < owi.ROM_MAX; i++) {
+    for (size_t i = 0; i < owi.ROM_MAX; i++) {
       if (rom[i] < 0x10) Serial.print(0);
       Serial.print(rom[i], HEX);
     }

@@ -60,13 +60,13 @@ void loop()
     Serial.print(sensor.resolution());
 
     // Print alarm trigger threshols
-    Serial.print(F(",trigger=["));
+    Serial.print(F(",trigger="));
     Serial.print(low);
     Serial.print(F(".."));
     Serial.print(high);
 
     // And temperature
-    Serial.print(F("],temperature="));
+    Serial.print(F(",temperature="));
     Serial.println(sensor.temperature());
   } while (last != owi.LAST);
 
