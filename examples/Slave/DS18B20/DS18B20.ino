@@ -2,8 +2,11 @@
 #include "OWI.h"
 #include "Slave/OWI.h"
 
+/** DS18B20 family code. */
+static const uint8_t FAMILY_CODE = 0x28;
+
 /**
- * DS18B20 Function Commands (Table 3, pp. 12).
+ * DS18B20 Function Commands.
  */
 enum {
   CONVERT_T = 0x44,		//!< Initiate temperature conversion.
@@ -15,7 +18,7 @@ enum {
 } __attribute__((packed));
 
 /**
- * DS18B20 Memory Map (Figure 7, pp. 7).
+ * DS18B20 Memory Map.
  */
 struct scratchpad_t {
   int16_t temperature;		//!< Temperature reading (9-12 bits).
@@ -26,31 +29,32 @@ struct scratchpad_t {
 } __attribute__((packed));
 
 // ROM identity for slave device
-uint8_t ROM[OWI::ROM_MAX] = {
-  0x28, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88
-};
+uint8_t ROM[OWI::ROM_MAX];
 
-// The slave device
+// Slave device one wire access
 Slave::OWI<BOARD::D7> owi(ROM);
 
-// Scratchpad with temperature, trigger and configuration
+// Scratchpad with temperature, triggers and configuration
 scratchpad_t scratchpad = {
-  0x0550,			//!< 85 C temperature
-  75,				//!< 75 C high trigger
+  0x0550,			//!< 85 C default temperature,
+  75,				//!< 75 C high trigger, and
   70,				//!< 70 C low trigger
-  0x3f,				//!< 9 bits conversion
+  0x3f,				//!< 10 bits conversion
   { 0, 0, 0 }			//!< Reserved
 };
 
-// Analog pin used for emulated temperture reading
-int pin = A0;
+// Analog pin used for emulated temperature reading
+const int pin = A0;
 
 void setup()
 {
+  // Random ROM identity code
+  ROM[0] = FAMILY_CODE;
+  for (size_t i = 1; i < OWI::ROM_MAX; i++) ROM[i] = rand();
 }
 
-// This sketch uses approx. 1700 bytes (Uno) of program storage space,
-// and 33 bytes for global variables (random access memory)
+// This sketch uses approx. 1900 bytes (Uno) of program storage space,
+// and 38 bytes for global variables (random access memory)
 void loop()
 {
   // Application could do something in the background before
@@ -58,7 +62,8 @@ void loop()
   if (!owi.rom_command()) return;
 
   // DS18B20 emulation with analog read; mapping from 0..1023
-  // to -128.00..127.75 C, 10-bits resolution
+  // to -128.00..127.75 C, 10-bits resolution. Set alarm according
+  // to low and high thresholds
   int16_t value;
   switch (owi.read()) {
   case CONVERT_T:
@@ -73,6 +78,10 @@ void loop()
     break;
   case WRITE_SCRATCHPAD:
     owi.read(&scratchpad.high_trigger, 3);
+    break;
+  case COPY_SCRATCHPAD:
+  case RECALL_E:
+  case READ_POWER_SUPPLY:
     break;
   }
 }
