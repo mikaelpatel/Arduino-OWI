@@ -143,6 +143,7 @@ public:
   uint16_t conversion_time()
   {
     if (!m_converting) return (0);
+    m_converting = false;
     uint16_t ms = millis() - m_start;
     uint16_t conv_ms = (MAX_CONVERSION_TIME >> (12 - resolution()));
     if (conv_ms > ms) return (conv_ms - ms);
@@ -150,13 +151,15 @@ public:
   }
 
   /**
-   * Delay until the temperature conversion is completed.
+   * Delay until the temperature conversion is completed
+   * by polling the sensors.
    * @return true(1) if successful otherwise false(0).
    */
   bool convert_await()
   {
     if (!m_converting) return (false);
-    delay(conversion_time());
+    while (m_owi.read(1) == 0) delayMicroseconds(100);
+    m_converting = false;
     return (true);
   }
 
@@ -170,7 +173,6 @@ public:
    */
   bool read_scratchpad(bool match = true)
   {
-    convert_await();
     if (match && !m_owi.match_rom(m_rom)) return (false);
     m_owi.write(READ_SCRATCHPAD);
     return (m_owi.read(&m_scratchpad, sizeof(m_scratchpad)));

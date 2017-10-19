@@ -45,5 +45,5 @@ void loop()
   } while (last != owi.LAST);
 
   Serial.println();
-  delay(5000);
+  delay(2000);
 }

@@ -19,7 +19,7 @@ void loop()
   // Print list of sensors, rom code, and temperature
 
   if (!sensor.convert_request(true)) return;
-  delay(sensor.conversion_time());
+  sensor.convert_await();
 
   int8_t last = owi.FIRST;
   uint8_t* rom = sensor.rom();
@@ -30,9 +30,7 @@ void loop()
     if (last == owi.ERROR) break;
 
     // Read the scratchpad with current temperature, tiggers, etc
-    ASSERT(sensor.read_scratchpad(false));
-    int8_t low, high;
-    sensor.get_trigger(low, high);
+    sensor.read_scratchpad(false);
 
     // Print sequence number
     Serial.print(id++);
@@ -60,6 +58,8 @@ void loop()
     Serial.print(sensor.resolution());
 
     // Print alarm trigger threshols
+    int8_t low, high;
+    sensor.get_trigger(low, high);
     Serial.print(F(",trigger="));
     Serial.print(low);
     Serial.print(F(".."));
@@ -71,5 +71,5 @@ void loop()
   } while (last != owi.LAST);
 
   Serial.println();
-  delay(4000);
+  delay(2000);
 }
