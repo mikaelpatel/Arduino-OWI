@@ -21,14 +21,10 @@
 
 #include "GPIO.h"
 
-#ifndef CHARBITS
-#define CHARBITS 8
-#endif
-
 /**
  * One Wire Interface (OWI) Slave Device template class using GPIO.
- * Allows emulation of One Wire devices, and basic communication
- * between boards. Supports the standard ROM commands.
+ * Allows emulation of One Wire devices, and basic low-speed
+ * communication between boards. Supports the standard ROM commands.
  * @param[in] PIN board pin for 1-wire bus.
  */
 namespace Slave {
@@ -39,7 +35,7 @@ public:
   static const size_t ROM_MAX = 8;
 
   /** One Wire device identity ROM size in bits. */
-  static const size_t ROMBITS = ROM_MAX * CHARBITS;
+  static const size_t ROMBITS = ROM_MAX * 8;
 
   /**
    * Construct one wire bus slave device connected to the given
@@ -94,7 +90,7 @@ public:
     if (!m_pin) return (false);
 
     // Check reset pulse width
-    if (micros() - m_timestamp < 400) {
+    if (micros() - m_timestamp < 410) {
       m_timestamp = 0;
       return (false);
     }
@@ -113,34 +109,46 @@ public:
 
   /**
    * Read bits from one wire bus master. Default number of bits is 8.
+   * Calculate intermediate cyclic redundancy check sum.
    * @param[in] bits to be read.
    * @return value read.
    */
-  uint8_t read(uint8_t bits = CHARBITS)
+  uint8_t read(uint8_t bits = 8)
   {
-    uint8_t adjust = CHARBITS - bits;
+    uint8_t adjust = 8 - bits;
     uint8_t res = 0;
-    while (bits--) {
+    uint8_t mix = 0;
+    do {
       noInterrupts();
       // Wait for bit start
       while (m_pin);
       // Delay to sample bit value
-      delayMicroseconds(15);
+      delayMicroseconds(20);
       res >>= 1;
-      res |= (m_pin ? 0x80 : 0x00);
+      if (m_pin) {
+	res |= 0x80;
+	mix = (m_crc ^ 1);
+      }
+      else {
+	mix = (m_crc ^ 0);
+      }
       interrupts();
-      // Wait for bit end
-      m_timestamp = micros();
-      for (int i = 200; !m_pin; i--) if (i == 0) return (0);
-    }
-    m_timestamp = 0;
+      // Calculate cyclic redundancy check sum
+      m_crc >>= 1;
+      if (mix & 1) m_crc ^= 0x8C;
+      // Wait for bit end (max 50 us)
+      uint8_t count = 255;
+      while (!m_pin && --count);
+      if (count == 0) return (0);
+    } while (--bits);
     res >>= adjust;
     return (res);
   }
 
   /**
    * Read given number of bytes from one wire bus master to given
-   * buffer. Calculates 1-wire crc and return result of validation.
+   * buffer. Calculate intermediate cyclic redundancy check sum,
+   * and return validation (should be zero).
    * @param[in] buf buffer pointer.
    * @param[in] count number of bytes to read.
    * @return true(1) if check sum is correct otherwise false(0).
@@ -148,28 +156,29 @@ public:
   bool read(void* buf, size_t count)
   {
     uint8_t* bp = (uint8_t*) buf;
-    uint8_t crc = 0;
 
     // Write bytes and calculate crc
-    while (count--) {
+    m_crc = 0;
+    do {
       uint8_t value = read();
       *bp++ = value;
-      crc = crc_update(crc, value);
-    }
+    } while (--count);
 
     // Return crc validation
-    return (crc == 0);
+    return (m_crc == 0);
   }
 
   /**
    * Write bits to one wire bus master. The bits are written from LSB
-   * to MSB. Default number of bits is 8.
+   * to MSB. Default number of bits is 8. Calculate intermediate
+   * cyclic redundancy check sum.
    * @param[in] value to write.
    * @param[in] bits to be written.
    */
-  void write(uint8_t value, uint8_t bits = CHARBITS)
+  void write(uint8_t value, uint8_t bits = 8)
   {
-    while (bits--) {
+    uint8_t mix = 0;
+    do {
       noInterrupts();
       // Wait for bit start
       while (m_pin);
@@ -178,34 +187,54 @@ public:
 	m_pin.output();
 	delayMicroseconds(20);
 	m_pin.input();
+	mix = (m_crc ^ 0);
+      }
+      else {
+	mix = (m_crc ^ 1);
       }
       interrupts();
       value >>= 1;
-      // Wait for bit end, other devices might be responding
-      m_timestamp = micros();
-      for (int i = 200; !m_pin; i--) if (i == 0) return;
-    }
-    m_timestamp = 0;
+      // Calculate cyclic redundancy check sum
+      m_crc >>= 1;
+      if (mix & 1) m_crc ^= 0x8C;
+      // Wait for bit end (max 50 us)
+      uint8_t count = 255;
+      while (!m_pin && --count);
+      if (count == 0) return;
+    } while (--bits);
   }
 
   /**
    * Write bytes to one wire bus master. Calculates and writes 1-wire
-   * cyclic redundancy check-sum last.
+   * cyclic redundancy checksum last.
    * @param[in] buf buffer to write.
    * @param[in] count number of bytes to write.
    */
   void write(const void* buf, size_t count)
   {
     const uint8_t* bp = (const uint8_t*) buf;
-    uint8_t crc = 0;
 
     // Write bytes and calculate crc
-    while (count--) {
+    m_crc = 0;
+    do {
       uint8_t value = *bp++;
       write(value);
-      crc = crc_update(crc, value);
-    }
-    write(crc);
+    } while (--count);
+
+    // Write calculated cyclic redundancy check sum
+    write(m_crc);
+  }
+
+  /**
+   * Write bit and inverse bit. Return read bit.
+   * @param[in] bit to write.
+   * @return bit read.
+   */
+  bool triplet(bool bit)
+  {
+    write(bit, 1);
+    write(!bit, 1);
+    return (read(1));
   }
 
   /**
@@ -245,7 +274,7 @@ public:
     case OWI::SKIP_ROM:
       return (true);
     case OWI::ALARM_SEARCH:
-      // Ignore if alarm is not set
+      // Ignore search request if alarm is not set
       if (!m_alarm)
 	return (false);
     case OWI::SEARCH_ROM:
@@ -255,9 +284,7 @@ public:
 	uint8_t mask = 0x01;
 	do {
 	  uint8_t bit = (mask & value) != 0;
-	  write(bit, 1);
-	  write(!bit, 1);
-	  bool dir = read(1);
+	  bool dir = triplet(bit);
 	  if (dir != bit) return (false);
 	  mask <<= 1;
 	} while (mask);
@@ -278,13 +305,13 @@ public:
     __attribute__((always_inline))
   {
     crc = crc ^ data;
-    uint8_t i = 8;
+    uint8_t bits = 8;
     do {
       if (crc & 0x01)
 	crc = (crc >> 1) ^ 0x8C;
       else
 	crc >>= 1;
-    } while (--i);
+    } while (--bits);
     return (crc);
   }
 
@@ -300,6 +327,9 @@ protected:
 
   /** Alarm setting. */
   bool m_alarm;
+
+  /** Intermediate cyclic redundancy check sum. */
+  uint8_t m_crc;
 };
 };
 #endif
