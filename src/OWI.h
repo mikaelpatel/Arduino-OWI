@@ -130,7 +130,9 @@ public:
     READ_ROM = 0x33,		//!< Read device family code and serial number.
     MATCH_ROM = 0x55,		//!< Select device with 64-bit rom code.
     SKIP_ROM = 0xCC,		//!< Broadcast or single device.
-    ALARM_SEARCH = 0xEC		//!< Initiate device alarm search.
+    ALARM_SEARCH = 0xEC,	//!< Initiate device alarm search.
+    LABEL_ROM = 0x15,		//!< Set short address (8-bit).
+    MATCH_LABEL = 0x51		//!< Select device with 8-bit short address.
   } __attribute__((packed));
 
   /**

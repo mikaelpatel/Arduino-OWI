@@ -46,6 +46,7 @@ public:
   OWI(uint8_t* rom) :
     m_timestamp(0),
     m_rom(rom),
+    m_label(255),
     m_alarm(false)
   {
     uint8_t crc = 0;
@@ -245,7 +246,9 @@ public:
     READ_ROM = 0x33,		//!< Read device family code and serial number.
     MATCH_ROM = 0x55,		//!< Select device with 64-bit rom code.
     SKIP_ROM = 0xCC,		//!< Broadcast or single device.
-    ALARM_SEARCH = 0xEC		//!< Initiate device alarm search.
+    ALARM_SEARCH = 0xEC,	//!< Initiate device alarm search.
+    LABEL_ROM = 0x15,		//!< Set short address (8-bit).
+    MATCH_LABEL = 0x51		//!< Select device with 8-bit short address.
   } __attribute__((packed));
 
   /**
@@ -261,23 +264,23 @@ public:
 
     // Standard ROM commands
     switch (read()) {
-    case OWI::READ_ROM:
+    case READ_ROM:
       // Write ROM to master
       write(m_rom, ROM_MAX - 1);
       return (false);
-    case OWI::MATCH_ROM:
+    case MATCH_ROM:
       // Match ROM from master
       for (size_t i = 0; i < ROM_MAX; i++)
 	if (m_rom[i] != read())
 	  return (false);
+    case SKIP_ROM:
       // Skip ROM, extended command will follow
-    case OWI::SKIP_ROM:
       return (true);
-    case OWI::ALARM_SEARCH:
+    case ALARM_SEARCH:
       // Ignore search request if alarm is not set
       if (!m_alarm)
 	return (false);
-    case OWI::SEARCH_ROM:
+    case SEARCH_ROM:
       // Write ROM bit and check branching
       for (size_t i = 0; i < ROM_MAX; i++) {
 	uint8_t value = m_rom[i];
@@ -290,6 +293,14 @@ public:
 	} while (mask);
       }
       return (true);
+    case LABEL_ROM:
+      // Device label setting
+      m_label = read();
+      return (false);
+    case MATCH_LABEL:
+      // Device label setting
+      if (m_label == read())
+	return (true);
     default:
       // Ignore all other commands
       return (false);
@@ -324,6 +335,9 @@ protected:
 
   /** ROM identity code. */
   uint8_t* m_rom;
+
+  /** ROM label (short address). */
+  uint8_t m_label;
 
   /** Alarm setting. */
   bool m_alarm;
