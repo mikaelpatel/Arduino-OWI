@@ -12,8 +12,8 @@ void setup()
   Serial.begin(57600);
   while (!Serial);
 
-  // Set sensor alarm triggers (20..25 C) and resolution (10 bits)
-  // Iterate though all thermometers and configure.
+  // Set thermometer sensor alarm triggers (20..25 C) and resolution
+  // (10 bits). Iterate all sensors and write configuration.
   uint8_t* rom = sensor.rom();
   int8_t last = owi.FIRST;
   do {
@@ -28,8 +28,9 @@ void setup()
 void loop()
 {
   // Check if any thermometer sersors have exceeded thresholds.
-  // Broadcast a convert request to all thermometer sensors.
-  // Print timestamp and sensor identity and temperature.
+  // Broadcast a convert request to all sensors: Print timestamp,
+  // sensor identity (rom) and temperature for all that report an
+  // alarm
 
   int8_t last = owi.FIRST;
   uint8_t* rom = sensor.rom();

@@ -137,7 +137,7 @@ public:
   }
 
   /**
-   * Return remaining convertion time in milliseconds.
+   * Return remaining conversion time in milliseconds.
    * @return milliseconds remaining.
    */
   uint16_t conversion_time()
@@ -151,6 +151,18 @@ public:
   }
 
   /**
+   * Check if the temperature conversion is completed.
+   * @return true(1) if ready otherwise false(0).
+   */
+  bool convert_ready()
+  {
+    if (!m_converting) return (true);
+    bool res = m_owi.read(1);
+    if (res) m_converting = false;
+    return (res);
+  }
+
+  /**
    * Delay until the temperature conversion is completed
    * by polling the sensors.
    * @return true(1) if successful otherwise false(0).
@@ -158,16 +170,15 @@ public:
   bool convert_await()
   {
     if (!m_converting) return (false);
-    while (m_owi.read(1) == 0) delayMicroseconds(100);
-    m_converting = false;
+    while (!convert_ready()) delay(1);
     return (true);
   }
 
   /**
-   * Read the contents of the scratchpad to local memory. An internal
-   * delay will occur if a convert_request() is pending. The delay is
-   * at most max conversion time (750 ms). Call with match parameter
-   * false if used with search_rom().
+   * Read the contents of the scratchpad to local memory. Call
+   * convert_ready(), convert_await() or delay with amount from
+   * conversion_time() before reading. Call with match parameter false
+   * if used with search_rom().
    * @param[in] match rom code (default true).
    * @return true(1) if successful otherwise false(0).
    */
@@ -180,7 +191,9 @@ public:
 
   /**
    * Write the contents of the scratchpad triggers and configuration
-   * (3 bytes) to device.
+   * (3 bytes) to device. Call with match parameter false if used with
+   * search_rom().
+   * @param[in] match rom code (default true).
    * @return true(1) if successful otherwise false(0).
    */
   bool write_scratchpad(bool match = true)
@@ -192,23 +205,26 @@ public:
 
   /**
    * Copy device scratchpad triggers and configuration data to device
-   * EEPROM.
+   * EEPROM. Call with match parameter false if used with search_rom().
+   * @param[in] match rom code (default true).
    * @return true(1) if successful otherwise false(0).
    */
-  bool copy_scratchpad()
+  bool copy_scratchpad(bool match = true)
   {
-    if (!m_owi.match_rom(m_rom)) return (false);
+    if (match && !m_owi.match_rom(m_rom)) return (false);
     m_owi.write(COPY_SCRATCHPAD);
     return (true);
   }
 
   /**
    * Recall the alarm triggers and configuration from device EEPROM.
+   * Call with match parameter false if used with search_rom().
+   * @param[in] match rom code (default true).
    * @return true(1) if successful otherwise false(0).
    */
-  bool recall()
+  bool recall(bool match = true)
   {
-    if (!m_owi.match_rom(m_rom)) return (false);
+    if (match && !m_owi.match_rom(m_rom)) return (false);
     m_owi.write(RECALL_E);
     return (true);
   }
