@@ -50,7 +50,8 @@ void setup()
 {
   // Random ROM identity code
   ROM[0] = FAMILY_CODE;
-  for (size_t i = 1; i < OWI::ROM_MAX; i++) ROM[i] = rand();
+  uint8_t* p = (uint8_t*) 0;
+  for (size_t i = 1; i < OWI::ROM_MAX; i++) ROM[i] = *p++;
 }
 
 // This sketch uses approx. 1900 bytes (Uno) of program storage space,
