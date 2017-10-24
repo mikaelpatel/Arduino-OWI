@@ -25,7 +25,7 @@
  * One Wire Interface (OWI) Slave Device template class using GPIO.
  * Allows emulation of One Wire devices, and basic low-speed
  * communication between boards. Supports the standard ROM commands,
- * and short device addressing.
+ * and fast addressing.
  * @param[in] PIN board pin for 1-wire bus.
  */
 namespace Slave {
