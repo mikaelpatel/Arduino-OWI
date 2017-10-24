@@ -17,18 +17,21 @@ Version: 1.8
 * [Hardware One-Wire Bus Manager, DS2482, Hardware::OWI](./src/Hardware/OWI.h)
 * [Software One-Wire Slave Device, Slave::OWI](./src/Slave/OWI.h)
 * [Programmable Resolution 1-Wire Digital Thermometer, DS18B20](./src/Driver/DS18B20.h)
-* [One-Wire Interface Remove Arduino](./src/Driver/Arduino.h)
+* [One-Wire Remove Arduino, Master](./src/Driver/Arduino.h)
 
 ## Example Sketches
 
 * [Alarm](./examples/Alarm)
+* [Arduino](./examples/Arduino)
+* [Arduino, Slave](./examples/Slave/Arduino)
 * [Search](./examples/Search)
 * [Scanner](./examples/Scanner)
 * [DS18B20](./examples/DS18B20)
+* [DS18B20, Slave](./examples/Slave/DS18B20)
 * [DS1990A](./examples/DS1990A)
 
 [ATtiny](./examples/ATtiny) and [DS2482](./examples/DS2482)
-variants. And example of [Slave](./examples/Slave) device.
+variants.
 
 ## Dependencies
 
