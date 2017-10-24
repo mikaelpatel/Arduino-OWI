@@ -24,7 +24,8 @@
 /**
  * One Wire Interface (OWI) Slave Device template class using GPIO.
  * Allows emulation of One Wire devices, and basic low-speed
- * communication between boards. Supports the standard ROM commands.
+ * communication between boards. Supports the standard ROM commands,
+ * and short device addressing.
  * @param[in] PIN board pin for 1-wire bus.
  */
 namespace Slave {
@@ -41,19 +42,40 @@ public:
    * Construct one wire bus slave device connected to the given
    * template pin parameter, and rom identity code. Cyclic redundancy
    * check sum is generated for given rom identity code.
-   * @param[in] rom identity code.
+   * @param[in] rom identity code (program memory).
    */
-  OWI(uint8_t* rom) :
+  OWI(const uint8_t* rom) :
     m_timestamp(0),
-    m_rom(rom),
     m_label(255),
     m_alarm(false)
   {
     uint8_t crc = 0;
-    for (size_t i = 0; i < ROM_MAX - 1; i++)
-      crc = crc_update(crc, m_rom[i]);
+    for (size_t i = 0; i < ROM_MAX - 1; i++) {
+      uint8_t data = pgm_read_byte(rom++);
+      m_rom[i] = data;
+      crc = crc_update(crc, data);
+    }
     m_rom[ROM_MAX - 1] = crc;
     m_pin.open_drain();
+  }
+
+  /**
+   * Get cyclic redundancy check sum. Calculated by buffer read() and
+   * write().
+   * @return crc.
+   */
+  uint8_t crc()
+  {
+    return (m_crc);
+  }
+
+  /**
+   * Set cyclic redundancy check sum.
+   * @param[in] value to set.
+   */
+  void crc(uint8_t value)
+  {
+    m_crc = value;
   }
 
   /**
@@ -156,9 +178,8 @@ public:
    */
   bool read(void* buf, size_t count)
   {
-    uint8_t* bp = (uint8_t*) buf;
-
     // Write bytes and calculate crc
+    uint8_t* bp = (uint8_t*) buf;
     m_crc = 0;
     do {
       uint8_t value = read();
@@ -213,16 +234,15 @@ public:
    */
   void write(const void* buf, size_t count)
   {
+    // Write bytes and calculate cyclic redundancy check-sum
     const uint8_t* bp = (const uint8_t*) buf;
-
-    // Write bytes and calculate crc
     m_crc = 0;
     do {
       uint8_t value = *bp++;
       write(value);
     } while (--count);
 
-    // Write calculated cyclic redundancy check sum
+    // Write calculated crc
     write(m_crc);
   }
 
@@ -248,6 +268,7 @@ public:
     SKIP_ROM = 0xCC,		//!< Broadcast or single device.
     ALARM_SEARCH = 0xEC,	//!< Initiate device alarm search.
     LABEL_ROM = 0x15,		//!< Set short address (8-bit).
+    READ_LABEL = 0x16,		//!< Get 8-bit short address.
     MATCH_LABEL = 0x51		//!< Select device with 8-bit short address.
   } __attribute__((packed));
 
@@ -293,10 +314,6 @@ public:
 	} while (mask);
       }
       return (true);
-    case LABEL_ROM:
-      // Device label setting
-      m_label = read();
-      return (false);
     case MATCH_LABEL:
       // Device label setting
       if (m_label == read())
@@ -304,6 +321,28 @@ public:
     default:
       // Ignore all other commands
       return (false);
+    };
+  }
+
+  /**
+   * Read command and filter label sub-commands. Returns command or
+   * zero(0).
+   * @return command.
+   */
+  uint8_t read_command()
+  {
+    uint8_t cmd = read();
+    switch (cmd) {
+    case LABEL_ROM:
+      // Set device label
+      m_label = read();
+      return (0);
+    case READ_LABEL:
+      // Get device label
+      write(m_label);
+      return (0);
+    default:
+      return (cmd);
     };
   }
 
@@ -334,7 +373,7 @@ protected:
   uint32_t m_timestamp;
 
   /** ROM identity code. */
-  uint8_t* m_rom;
+  uint8_t m_rom[ROM_MAX];
 
   /** ROM label (short address). */
   uint8_t m_label;

@@ -18,7 +18,7 @@ enum {
 } __attribute__((packed));
 
 /**
- * DS18B20 Memory Map.
+ * DS18B20 Scratchpad structure.
  */
 struct scratchpad_t {
   int16_t temperature;		//!< Temperature reading (9-12 bits).
@@ -29,7 +29,9 @@ struct scratchpad_t {
 } __attribute__((packed));
 
 // ROM identity for slave device
-uint8_t ROM[OWI::ROM_MAX];
+const uint8_t ROM[OWI::ROM_MAX] PROGMEM = {
+  FAMILY_CODE, 0x12, 0x34, 0x56, 0x78, 0x89, 0x9a, 0xab
+};
 
 // Slave device one wire access
 Slave::OWI<BOARD::D7> owi(ROM);
@@ -46,16 +48,16 @@ scratchpad_t scratchpad = {
 // Analog pin used for emulated temperature reading
 const int pin = A0;
 
+// Use builtin led; active during conversion delay
+GPIO<BOARD::D13> led;
+
 void setup()
 {
-  // Random ROM identity code
-  ROM[0] = FAMILY_CODE;
-  uint8_t* p = (uint8_t*) 0;
-  for (size_t i = 1; i < OWI::ROM_MAX; i++) ROM[i] = *p++;
+  led.output();
 }
 
-// This sketch uses approx. 1900 bytes (Uno) of program storage space,
-// and 38 bytes for global variables (random access memory)
+// This sketch uses approx. 1500 bytes (Uno) of program storage space,
+// and less than 40 bytes for global variables (random access memory)
 void loop()
 {
   // Application could do something in the background before
@@ -73,9 +75,11 @@ void loop()
     value >>= 2;
     owi.alarm(value >= scratchpad.high_trigger ||
 	      value <= scratchpad.low_trigger);
+    led.high();
     break;
   case READ_SCRATCHPAD:
     owi.write(&scratchpad, sizeof(scratchpad));
+    led.low();
     break;
   case WRITE_SCRATCHPAD:
     owi.read(&scratchpad.high_trigger, 3);

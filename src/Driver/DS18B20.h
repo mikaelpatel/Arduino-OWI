@@ -16,8 +16,8 @@
  * Lesser General Public License for more details.
  */
 
-#ifndef DS18B20_H
-#define DS18B20_H
+#ifndef OWI_DRIVER_DS18B20_H
+#define OWI_DRIVER_DS18B20_H
 
 #include "OWI.h"
 

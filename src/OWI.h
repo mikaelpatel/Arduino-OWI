@@ -139,6 +139,9 @@ public:
    * Optimized Dallas/Maxim iButton 8-bit Cyclic Redundancy Check
    * calculation. Polynomial: x^8 + x^5 + x^4 + 1 (0x8C).
    * See http://www.maxim-ic.com/appnotes.cfm/appnote_number/27
+   * @param[in] crc cyclic redundancy check sum.
+   * @param[in] data to append.
+   * @return crc.
    */
   static inline uint8_t crc_update(uint8_t crc, uint8_t data)
     __attribute__((always_inline))
@@ -150,6 +153,36 @@ public:
       else
 	crc >>= 1;
     }
+    return (crc);
+  }
+
+  /**
+   * Optimized Dallas/Maxim iButton 8-bit Cyclic Redundancy Check
+   * calculation. Polynomial: x^8 + x^5 + x^4 + 1 (0x8C).
+   * @param[in] buf buffer pointer.
+   * @param[in] count number of bytes.
+   * @return crc.
+   */
+  static inline uint8_t crc(const void* buf, size_t count)
+  {
+    const uint8_t* bp = (const uint8_t*) buf;
+    uint8_t crc = 0;
+    while (count--) crc = crc_update(crc, *bp++);
+    return (crc);
+  }
+
+  /**
+   * Optimized Dallas/Maxim iButton 8-bit Cyclic Redundancy Check
+   * calculation. Polynomial: x^8 + x^5 + x^4 + 1 (0x8C).
+   * @param[in] buf buffer pointer (program memory).
+   * @param[in] count number of bytes.
+   * @return crc.
+   */
+  static inline uint8_t crc_P(const void* buf, size_t count)
+  {
+    const uint8_t* bp = (const uint8_t*) buf;
+    uint8_t crc = 0;
+    while (count--) crc = crc_update(crc, pgm_read_byte(bp++));
     return (crc);
   }
 
@@ -174,7 +207,9 @@ public:
       if (!reset()) return (ERROR);
       write(SEARCH_ROM);
       last = search(code, last);
+      if (last == ERROR) return (ERROR);
     } while ((last != LAST) && (family != 0) && (code[0] != family));
+    if (family != 0 && code[0] != family) return (ERROR);
     return (last);
   }
 
@@ -231,6 +266,20 @@ public:
   }
 
   /**
+   * Match device label. Address the device with the given label. Device
+   * specific function command should follow.
+   * @param[in] label device short address.
+   * @return true(1) if successful otherwise false(0).
+   */
+  bool match_label(uint8_t label)
+  {
+    if (!reset()) return (false);
+    write(MATCH_LABEL);
+    write(label);
+    return (true);
+  }
+
+  /**
    * One-Wire Interface (OWI) Device Driver abstract class.
    */
   class Device {
@@ -244,7 +293,7 @@ public:
     Device(OWI& owi, const uint8_t* rom = NULL) :
       m_owi(owi)
     {
-      if (rom != NULL) memcpy(m_rom, rom, ROM_MAX);
+      if (rom != NULL) this->rom(rom);
     }
 
     /**
@@ -253,7 +302,13 @@ public:
      */
     void rom(const uint8_t* rom)
     {
-      memcpy(m_rom, rom, ROM_MAX);
+      uint8_t crc = 0;
+      for (size_t i = 0; i < ROM_MAX - 1; i++) {
+	uint8_t data = *rom++;
+	m_rom[i] = data;
+	crc = OWI::crc_update(crc, data);
+      }
+      m_rom[ROM_MAX - 1] = crc;
     }
 
     /**
@@ -262,7 +317,13 @@ public:
      */
     void rom_P(const uint8_t* rom)
     {
-      memcpy_P(m_rom, rom, ROM_MAX);
+      uint8_t crc = 0;
+      for (size_t i = 0; i < ROM_MAX - 1; i++) {
+	uint8_t data = pgm_read_byte(rom++);
+	m_rom[i] = data;
+	crc = OWI::crc_update(crc, data);
+      }
+      m_rom[ROM_MAX - 1] = crc;
     }
 
     /**

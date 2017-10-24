@@ -17,6 +17,7 @@ Version: 1.8
 * [Hardware One-Wire Bus Manager, DS2482, Hardware::OWI](./src/Hardware/OWI.h)
 * [Software One-Wire Slave Device, Slave::OWI](./src/Slave/OWI.h)
 * [Programmable Resolution 1-Wire Digital Thermometer, DS18B20](./src/Driver/DS18B20.h)
+* [One-Wire Interface Remove Arduino](./src/Driver/Arduino.h)
 
 ## Example Sketches
 
