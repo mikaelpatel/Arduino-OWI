@@ -28,13 +28,8 @@ struct scratchpad_t {
   uint8_t reserved[3];		//!< Reserved.
 } __attribute__((packed));
 
-// ROM identity for slave device
-const uint8_t ROM[OWI::ROM_MAX] PROGMEM = {
-  FAMILY_CODE, 0x12, 0x34, 0x56, 0x78, 0x89, 0x9a, 0xab
-};
-
-// Slave device one wire access
-Slave::OWI<BOARD::D7> owi(ROM);
+// Slave device one wire access; use random rom code
+Slave::OWI<BOARD::D7> owi(FAMILY_CODE);
 
 // Scratchpad with temperature, triggers and configuration
 scratchpad_t scratchpad = {

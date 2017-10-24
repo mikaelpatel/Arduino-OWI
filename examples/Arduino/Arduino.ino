@@ -5,7 +5,7 @@
 #include "assert.h"
 #include "benchmark.h"
 
-// One-Wire Interface Remove Arduino (Master)
+// One-Wire Interface Remote Arduino (Master)
 Software::OWI<BOARD::D7> owi;
 Arduino arduino(owi);
 
@@ -20,7 +20,7 @@ void setup()
   int pins;
 
   // Search for device and set short address (label)
-  last = owi.search_rom(arduino.FAMILY, rom, last);
+  last = owi.search_rom(arduino.FAMILY_CODE, rom, last);
   ASSERT(last != owi.ERROR);
   arduino.rom(rom);
   arduino.label_rom(id);

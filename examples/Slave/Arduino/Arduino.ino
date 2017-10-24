@@ -3,13 +3,8 @@
 #include "Slave/OWI.h"
 #include "Driver/Arduino.h"
 
-/** ROM identity code (in program memory). */
-const uint8_t ROM[OWI::ROM_MAX] PROGMEM = {
-  Arduino::FAMILY, 0x21, 0x32, 0x43, 0x54, 0x65, 0x76, 0x80
-};
-
 /** One-Wire Slave Device Bus Manager. */
-Slave::OWI<BOARD::D7> owi(ROM);
+Slave::OWI<BOARD::D7> owi(Arduino::FAMILY_CODE);
 
 /**
  * Setup One-Wire Remote Arduino Slave Device. Set alarm

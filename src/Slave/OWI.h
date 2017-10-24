@@ -60,6 +60,29 @@ public:
   }
 
   /**
+   * Construct one wire bus slave device connected to the given
+   * template pin parameter, and family code. Random identity code
+   * is generated.
+   * @param[in] family code
+   */
+  OWI(uint8_t family) :
+    m_timestamp(0),
+    m_label(255),
+    m_alarm(false)
+  {
+    uint8_t crc = crc_update(0, family);
+    uint8_t* p = 0;
+    m_rom[0] = family;
+    for (size_t i = 1; i < ROM_MAX - 1; i++) {
+      uint8_t data = *p++;
+      m_rom[i] = data;
+      crc = crc_update(crc, data);
+    }
+    m_rom[ROM_MAX - 1] = crc;
+    m_pin.open_drain();
+  }
+
+  /**
    * Get cyclic redundancy check sum. Calculated by buffer read() and
    * write().
    * @return crc.

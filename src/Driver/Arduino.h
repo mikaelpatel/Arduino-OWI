@@ -35,10 +35,10 @@
 class Arduino : public OWI::Device {
 public:
   /** Family code. */
-  static const uint8_t FAMILY = 0x10;
+  static const uint8_t FAMILY_CODE = 0x60;
 
   /**
-   * Construct One-Wire Interface (OWI) Remove Arduino with given bus
+   * Construct One-Wire Interface (OWI) Remote Arduino with given bus
    * and device address.
    * @param[in] owi bus manager.
    * @param[in] rom code (default NULL).
@@ -216,7 +216,7 @@ public:
     return (0);
   }
 
-  /** One-Wire Interface (OWI) Remove Arduino Device function codes. */
+  /** One-Wire Interface (OWI) Remote Arduino Device function codes. */
   enum {
     PIN_MODE = 0x11,		//!< Set pin mode: 6b pin, 2b mode
     DIGITAL_READ = 0x22,	//!< Read digital pin: 6b pin, 1b return
